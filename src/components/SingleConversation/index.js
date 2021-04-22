@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import { sendMessage } from '../../modules/message/actions';
 import './style.css';
 
-
 class SingleConversation extends PureComponent {
   constructor(props) {
     super(props);
@@ -29,20 +28,40 @@ class SingleConversation extends PureComponent {
       });
     }
   }
-
   render() {
+    let intervalMap = new Map();
     const {
       messages,
     } = this.props;
-
     const {
       messageInput,
     } = this.state;
+    const MINUTES = 300000;
+    messages.forEach(message => {
+      let timeNow = Date.now();
+      let messageSendTime = new Date(message.createdAt);
+      let key = Math.floor((timeNow - messageSendTime) / MINUTES);
+      !intervalMap.has(key)? intervalMap.set(key,[message]) : intervalMap.get(key).push(message);
+    });
 
+    let intervals = [...intervalMap.keys()];
     return (
       <div className="drift-sidebar-single-conversation--container">
         <div className="drift-sidebar-single-conversation-body">
-          {messages.map(message => <div key={message.id}>{message.body}</div>)}
+        {}
+          {
+            intervals.map(key => (
+              key === 0  ?
+              <div key={key}>Less 5 mins ago</div> :
+              <div key={key}>{key * 5} mins ago</div> 
+            ))
+          }
+          {
+            intervals.forEach(key => {
+              return intervalMap.get(key).map(message => {
+                 return <div>{message.body}</div> })
+              })
+          }
         </div>
         <div className="drift-sidebar-single-conversation-input">
           <input placeholder="Type and press enter to send" value={messageInput} onChange={this.onChangeInput} onKeyDown={this.maybeSubmit} />
@@ -50,8 +69,7 @@ class SingleConversation extends PureComponent {
       </div>
     )
   }
-}
-
+} 
 const mapStateToProps = state => {
   const conversationId = state.conversation.selectedConversation;
   return {
@@ -59,12 +77,10 @@ const mapStateToProps = state => {
     conversationId,
   }
 }
-
 const mapDispatchToProps = dispatch => ({
   dispatcher: {
     sendMessage: (messageBody, conversationId) => dispatch(sendMessage({ body: messageBody, conversationId, })),
   }
 })
-
 
 export default connect(mapStateToProps, mapDispatchToProps)(SingleConversation);
